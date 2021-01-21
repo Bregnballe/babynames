@@ -1,78 +1,111 @@
-import React, { useState, useEffect, useCallback } from "react";
-//import { useFetch } from "./hooks/useFetch";
-import InfiniteScroll from "react-infinite-scroll-component";
-//import { debounce } from 'lodash';
-
+import React, { useState, useEffect, useRef } from "react";
 import { useDebounce } from "./hooks/useDebounce";
-
+import { useInView } from "react-intersection-observer";
 import {Name} from "./components/Name"
 import {List} from "./components/List"
 
 
 export const App = () => {
+    const [ref, inView] = useInView();
     const [data, setData] = useState([]);
     const [total, setTotal] = useState("")
     const [remaining, setRemaining] = useState("")
     const [searchTerm, setSearchTerm] = useState("");
-    //const [isSearching, setIsSearching] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
     const limit = 50;
-    const initialController = new AbortController();
-    const additionalController = new AbortController();
+    const firstUpdate = useRef(true);
+    const initialController = useRef(null);
+    const additionalController = useRef(null);
+
+
 
     // GENERAL FETCH API DATA
     const getInitialData = async (queryString, controller) => {
-        additionalController.abort();
-        const response = await fetch(`http://localhost:5000/names?limit=${limit}${queryString}`,{signal: controller.signal});
-        const responseData = await response.json();
-        return responseData
+        console.log('Getting initial data')
+        try {
+            setIsLoading(true)
+            const response = await fetch(`http://localhost:5000/names?limit=${limit}${queryString}`,{signal: controller.signal});
+            const responseData = await response.json();
+            return responseData
+        }
+        catch (err) {
+            if (err.name === 'AbortError') { // handle abort()
+                console.error(err);
+                return []
+            } 
+            else {
+                throw err;
+            }
+        }
     }
 
     const getAdditionalData = async (queryString, controller) => {
-        initialController.abort();
+        console.log('Getting additional data') 
+        try {
+        setIsLoading(true)
         const response = await fetch(`http://localhost:5000/names?limit=${limit}${queryString}`,{signal: controller.signal});
         const responseData = await response.json();
         return responseData
+        }
+        catch (err) {
+            if (err.name === 'AbortError') { // handle abort()
+                console.error(err);
+                return []
+            } 
+            else {
+                throw err;
+            }
+        }
     }
-
-
-// load initial data
-// scroll -> fetch -> cancelled
-// search -> fetch
-// scroll -> won't fetch (Maybe abortcontrollers`?)
 
 
     //FETCHING ADDITIONAL DATA ON SCROLL
-    const fetchAdditionalData = async () => {
-        initialController.abort();
+    useEffect(() => {
+        console.log("inView: ", inView)
+        additionalController.current = new AbortController(); 
         
-        if (remaining > 0) {
-        const queryString = debouncedSearchTerm ? `&initial=false&search=${debouncedSearchTerm}` : '&initial=false';
+        if (!inView && !firstUpdate.current && !isLoading && remaining > 0) {
+        
+            const fetchAdditionalData = async () => {
 
-        const additionalData = await getAdditionalData(queryString, additionalController)
-        additionalData.names ? setData([...data, ...additionalData.names]) : setData(data);
-        additionalData.total ? setRemaining(additionalData.total-additionalData.names.length) : setRemaining(remaining);
-    }
-    };
+                
+                const queryString = debouncedSearchTerm ? `&initial=false&search=${debouncedSearchTerm}` : '&initial=false';
+
+                const additionalData = await getAdditionalData(queryString, additionalController.current)
+                additionalData.names ? setData([...data, ...additionalData.names]) : setData(data);
+                additionalData.total ? setRemaining(additionalData.total-additionalData.names.length) : setRemaining(remaining);
+                setIsLoading(false)
+            
+            };
+
+            fetchAdditionalData();
+
+        }
+    
+    }, [inView]);
+
 
     //FETCHING INITIAL DATA ON FIRST RENDER OR SEARCH
     useEffect(() => {
-        let mounted = true;
+
+        firstUpdate.current = false;
+        initialController.current = new AbortController(); 
 
         const fetchInitialData = async () => {
-
-            if (!mounted) return setData([]);
             
-            //setData([]);
-            additionalController.abort();
+            
+            const queryString = 
+            debouncedSearchTerm ? `&initial=true&search=${debouncedSearchTerm}` 
+            : '&initial=true';
 
-            const queryString = debouncedSearchTerm ? `&initial=true&search=${debouncedSearchTerm}` : '&initial=true';
-
-            const initialData = await getInitialData(queryString, initialController)
+            const initialData = await getInitialData(queryString, initialController.current)
+            initialData && window.scrollTo(0, 0);
             initialData.names ? setData(initialData.names) : setData([]) ;
             initialData.total ? setTotal(initialData.total) : setTotal("0");
             initialData.total ? setRemaining(initialData.total-initialData.names.length) : setRemaining("0");
+            setIsLoading(false)
         
         };
 
@@ -80,8 +113,9 @@ export const App = () => {
 
 
         return () => {
-            mounted = false;
-            initialController.abort();
+            //mounted = false;
+            initialController.current.abort();
+            additionalController.current.abort();
         }
         
     }, [debouncedSearchTerm]);
@@ -90,43 +124,66 @@ export const App = () => {
 
     // HANDLE SEARCH INPUT CHANGE
     const handleChange = (e) => {
-        initialController.abort();
-        additionalController.abort();
+        console.log(e.currentTarget.value)
+        initialController.current && initialController.current.abort();
+        additionalController.current && additionalController.current.abort();
         setSearchTerm(e.currentTarget.value);
     }
 
+    const handleOnClick = () => {
+        initialController.current && initialController.current.abort();
+        additionalController.current && additionalController.current.abort();
+    }
 
 
-    let nameList = data.map((item) => <Name key={item._id}>{item.name}</Name>);
+    let nameList = data.map((item, i) => { 
+        return i === data.length - limit ? 
+        (<Name key={item._id} ref={ref}>{item.name}</Name>)
+        : 
+        (<Name key={item._id}>{item.name}</Name>)
+    });
 
 
 
     return (
     <>
         <input
-            style={{position: "fixed"}}
+            style={{position: "fixed", top: "0px"}}
             autoFocus
             onChange={handleChange}
             value={searchTerm}
             placeholder="Search"
         />
+        <button  style={{position: "fixed", top: "128px"}} onClick={handleOnClick}>abort</button>
         <p
-        style={{position: "fixed", top: "12px"}}
+        style={{position: "fixed", top: "24px"}}
         >Total: {total}</p> 
         <p
-        style={{position: "fixed", top: "36px"}}
+        style={{position: "fixed", top: "48px"}}
         >Remaining: {remaining}</p> 
-        <InfiniteScroll
-            dataLength={data.length}
-            next={fetchAdditionalData}
-            loader={<p>...loading</p>}
-            hasMore={true}
-            scrollThreshold={0.1}
-        >
+        <p
+        style={{position: "fixed", top: "72px"}}
+        >{isLoading && "...loading"}</p> 
+
         <List>{nameList}</List>
-        </InfiniteScroll>
+
     </>  
     );
 }
 
 export default App;
+
+
+
+/*
+<InfiniteScroll
+dataLength={data.length}
+next={fetchAdditionalData}
+loader={<p>...loading</p>}
+hasMore={remaining > 0}
+scrollThreshold={0.5}
+endMessage={<p>the end</p>}
+>
+<List>{nameList}</List>
+</InfiniteScroll>
+*/
