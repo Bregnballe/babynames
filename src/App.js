@@ -7,11 +7,13 @@ import {List} from "./components/List"
 
 export const App = () => {
     const [ref, inView] = useInView();
+
     const [data, setData] = useState([]);
     const [total, setTotal] = useState("")
     const [remaining, setRemaining] = useState("")
-    const [searchTerm, setSearchTerm] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+
+    const [searchTerm, setSearchTerm] = useState("");
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
     const limit = 50;
@@ -22,27 +24,8 @@ export const App = () => {
 
 
     // GENERAL FETCH API DATA
-    const getInitialData = async (queryString, controller) => {
-        console.log('Getting initial data')
-        try {
-            setIsLoading(true)
-            const response = await fetch(`http://localhost:5000/names?limit=${limit}${queryString}`,{signal: controller.signal});
-            const responseData = await response.json();
-            return responseData
-        }
-        catch (err) {
-            if (err.name === 'AbortError') { // handle abort()
-                console.error(err);
-                return []
-            } 
-            else {
-                throw err;
-            }
-        }
-    }
-
-    const getAdditionalData = async (queryString, controller) => {
-        console.log('Getting additional data') 
+    const getData = async (queryString, controller) => {
+        console.log('Getting data') 
         try {
         setIsLoading(true)
         const response = await fetch(`http://localhost:5000/names?limit=${limit}${queryString}`,{signal: controller.signal});
@@ -67,13 +50,17 @@ export const App = () => {
         additionalController.current = new AbortController(); 
         
         if (!inView && !firstUpdate.current && !isLoading && remaining > 0) {
+            // if user has scrolled passed ref
+            // it is not the first fetch request
+            // data is not being loaded already
+            // data remains
         
             const fetchAdditionalData = async () => {
 
-                
-                const queryString = debouncedSearchTerm ? `&initial=false&search=${debouncedSearchTerm}` : '&initial=false';
+                const queryString = debouncedSearchTerm ? `&startId=${data[data.length-1]._id}&search=${debouncedSearchTerm}` : `&startId=${data[data.length-1]._id}`;
+                 // if there is a search term include it in query
 
-                const additionalData = await getAdditionalData(queryString, additionalController.current)
+                const additionalData = await getData(queryString, additionalController.current)
                 additionalData.names ? setData([...data, ...additionalData.names]) : setData(data);
                 additionalData.total ? setRemaining(additionalData.total-additionalData.names.length) : setRemaining(remaining);
                 setIsLoading(false)
@@ -82,6 +69,10 @@ export const App = () => {
 
             fetchAdditionalData();
 
+        }
+
+        return () => {
+            additionalController.current.abort();
         }
     
     }, [inView]);
@@ -95,17 +86,17 @@ export const App = () => {
 
         const fetchInitialData = async () => {
             
-            
             const queryString = 
-            debouncedSearchTerm ? `&initial=true&search=${debouncedSearchTerm}` 
-            : '&initial=true';
+            debouncedSearchTerm ? `&search=${debouncedSearchTerm}` 
+            : '';
+            // if there is a search term include it in query
 
-            const initialData = await getInitialData(queryString, initialController.current)
+            const initialData = await getData(queryString, initialController.current)
             initialData && window.scrollTo(0, 0);
             initialData.names ? setData(initialData.names) : setData([]) ;
             initialData.total ? setTotal(initialData.total) : setTotal("0");
             initialData.total ? setRemaining(initialData.total-initialData.names.length) : setRemaining("0");
-            setIsLoading(false)
+            setIsLoading(false);
         
         };
 
@@ -113,7 +104,6 @@ export const App = () => {
 
 
         return () => {
-            //mounted = false;
             initialController.current.abort();
             additionalController.current.abort();
         }
@@ -124,24 +114,25 @@ export const App = () => {
 
     // HANDLE SEARCH INPUT CHANGE
     const handleChange = (e) => {
-        console.log(e.currentTarget.value)
         initialController.current && initialController.current.abort();
         additionalController.current && additionalController.current.abort();
         setSearchTerm(e.currentTarget.value);
     }
 
+    // HANDLE ABORT CLICK
     const handleOnClick = () => {
         initialController.current && initialController.current.abort();
         additionalController.current && additionalController.current.abort();
     }
 
-
+    // CREATE NAMES LIST 
     let nameList = data.map((item, i) => { 
         return i === data.length - limit ? 
         (<Name key={item._id} ref={ref}>{item.name}</Name>)
         : 
         (<Name key={item._id}>{item.name}</Name>)
     });
+    // place ref on first listitem loaded
 
 
 
