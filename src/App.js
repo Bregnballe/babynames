@@ -4,6 +4,7 @@ import { useFetchNames } from "./hooks/useFetchNames";
 import { useInView } from "react-intersection-observer";
 import {Name} from "./components/Name"
 import {List} from "./components/List"
+import {Input} from "./components/Input"
 
 
 export const App = () => {
@@ -19,10 +20,10 @@ export const App = () => {
 
 
     // HANDLE SEARCH INPUT CHANGE
-    const handleChange = (e) => {
+    const handleChange = (value) => {
         initialController.current && initialController.current.abort();
         additionalController.current && additionalController.current.abort();
-        setSearchTerm(e.currentTarget.value);
+        setSearchTerm(value);
     }
 
     // HANDLE ABORT CLICK
@@ -32,7 +33,7 @@ export const App = () => {
     }
 
     // CREATE NAMES LIST 
-    let nameList = data.map((item, i) => { 
+    let nameList = data && data.map((item, i) => { 
         return i === data.length - limit ? 
         (<Name key={item._id} ref={ref}>{item.name}</Name>)
         : 
@@ -44,10 +45,8 @@ export const App = () => {
 
     return (
     <>
-        <input
-            style={{position: "fixed", top: "0px"}}
-            autoFocus
-            onChange={handleChange}
+        <Input
+            handleChange={handleChange}
             value={searchTerm}
             placeholder="Search"
         />

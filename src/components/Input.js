@@ -1,27 +1,21 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 
 
 export const Input = (props) => {
     const [inputState, setInputState] = useState("");
 
-
-    const debouncedChange = useMemo((value) =>
-        debounce(props.handleChange(value), 500),[]
-    )
-
     /*########### CHANGE INPUT STATE ###########*/
     const handleChange = (e) => {
-        setInputState(e.currentTarget.value);
+        props.handleChange(e.currentTarget.value);
 
-        debouncedChange(e.currentTarget.value)
     };
 
     return (
             <input
                 autoFocus
                 onChange={handleChange}
-                value={inputState}
                 placeholder="Search"
+                value={props.value}
             />
     );
 };
