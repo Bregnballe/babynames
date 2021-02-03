@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useDebounce } from "./hooks/useDebounce";
 import { useFetchNames } from "./hooks/useFetchNames";
 import { useInView } from "react-intersection-observer";
 import {Name} from "./components/Name"
 import {List} from "./components/List"
-import {Input} from "./components/Input"
-
+import {Input} from "./components/input/Input"
+import {Container} from "./components/container/Container"
+import { ThemeProvider } from 'styled-components'
+import { DefaultTheme } from '../src/themes/DefaultTheme'
+import { GlobalStyle } from '../src/themes/GlobalStyle'
 
 export const App = () => {
     const [ref, inView] = useInView();
@@ -44,12 +47,20 @@ export const App = () => {
 
 
     return (
-    <>
-        <Input
-            handleChange={handleChange}
-            value={searchTerm}
-            placeholder="Search"
-        />
+    <ThemeProvider theme={DefaultTheme}>
+        <GlobalStyle/>
+        <Container padding="small" fluid={true}>
+            <Input
+                handleChange={handleChange}
+                value={searchTerm}
+                textPlaceholder="Search for names" 
+                textAlign="left" 
+                fluid={true} 
+                id="input" 
+                componentSize="medium" 
+                hasLabel={false}
+            />
+        </Container>
         <button  style={{position: "fixed", top: "128px"}} onClick={handleOnClick}>abort</button>
         <p
         style={{position: "fixed", top: "24px"}}
@@ -63,7 +74,7 @@ export const App = () => {
 
         <List>{nameList}</List>
 
-    </>  
+    </ThemeProvider>
     );
 }
 
@@ -83,3 +94,5 @@ endMessage={<p>the end</p>}
 <List>{nameList}</List>
 </InfiniteScroll>
 */
+
+
