@@ -1,6 +1,8 @@
 import styled, {css} from "styled-components";
 import { InputProps } from './Input.interface';
 import { lighten, darken } from 'polished'
+import { space } from 'styled-system'
+
 
 export const InputStyled = styled.input<InputProps>`
 
@@ -80,6 +82,8 @@ ${props =>
 `
 
 export const DivStyled = styled.div<InputProps>`
+${space}
+
 position: relative;
 display: inline-block;
 
@@ -122,4 +126,29 @@ width:              100%;
 }
 
 
-`
+
+
+/*########### MAX_WIDTH ###########*/
+${props =>
+
+    props.maxWidth === 'small' ? 
+        css`
+        max-width: 320px;
+        `
+    : props.maxWidth === 'medium' ? 
+        css`
+        max-width: 768px;
+        `
+    : props.maxWidth === 'large' ? 
+        css`
+        max-width: 1024px;
+        `
+    : 
+        css`
+    
+        `
+    }
+    
+
+` 
+    

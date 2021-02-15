@@ -1,9 +1,64 @@
 import styled, {css} from "styled-components";
+import { space, background } from 'styled-system'
 import { ContainerProps } from './Container.interface';
 
 export const ContainerStyled = styled.div<ContainerProps>`
 
+/*########### STYLED SYSTEM ###########*/
+${space}
+${background}
+
+
 flex-basis: 100%;
+
+
+/*########### SIZE ###########*/
+${props =>
+
+props.componentSize === 'large' ? 
+    css`
+    font-size:          2rem;
+    `
+: props.componentSize === 'medium' ?
+    css`
+    font-size:          1.5rem;
+    ` 
+: //  DEFAULT: props.componentSize === 'small' 
+    css `
+    font-size:          1rem;          
+    `    
+}
+
+
+
+/*########### FIXED ###########*/
+${props =>
+
+props.fixed === 'right' ? 
+    css`
+    position: fixed;
+    right: 0;
+    `
+: props.fixed === 'left' ? 
+    css`
+    position: fixed;
+    left: 0;
+    ` 
+: props.fixed === 'bottom' ? 
+    css`
+    position: fixed;
+    bottom: 0;
+    `   
+: props.fixed === 'top' ?
+    css`
+    position: fixed;
+    top: 0;
+    ` 
+:   css`
+
+    `            
+}
+
 
 /*########### FLUID ###########*/
 ${props =>
@@ -11,6 +66,7 @@ ${props =>
 props.fluid ? 
     css`
     display: flex;
+    width: 100%;
     `
 :   css`
     display: inline-flex;
@@ -33,24 +89,25 @@ props.layout === 'column' ?
 
 }
 
-/*########### PADDING ###########*/
+
+/*########### MAX_WIDTH ###########*/
 ${props =>
 
-props.padding === 'small' ? 
+props.maxWidth === 'small' ? 
     css`
-    padding: 1em
+    max-width: 320px;
     `
-: props.padding === 'medium' ? 
+: props.maxWidth === 'medium' ? 
     css`
-    padding: 1.5em
+    max-width: 768px;
     `
-: props.padding === 'large' ? 
+: props.maxWidth === 'large' ? 
     css`
-    padding: 2em
+    max-width: 1024px;
     `
 : 
     css`
-    padding: 0em
+
     `
 }
 

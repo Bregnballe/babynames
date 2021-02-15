@@ -1,6 +1,14 @@
 import { ThemeProps } from './Theme.interface';
 
 export const DefaultTheme:ThemeProps = {
+    spacing: {
+      xs: "0.333rem",
+      s: "0.667rem",
+      m: "1rem",
+      l: "2rem",
+      xl: "3rem",
+      xxl: "4rem"
+    },
     colors: {
       primary: "#0E816A",
       secondary: "#f2f2f2",

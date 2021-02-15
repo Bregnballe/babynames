@@ -6,7 +6,7 @@ import { DivStyled } from './Input.styled';
 
 
     /*########### COMPONENT ###########*/
-export const Input: FC<InputProps> = ({textPlaceholder, textAlign, fluid, id, componentSize, hasLabel, ...rest}) => {
+export const Input: FC<InputProps> = ({autoFocus, mx, maxWidth, textPlaceholder, textAlign, fluid, id, componentSize, hasLabel, ...rest}) => {
     const [inputState, setInputState] = useState<string>("");
 
 
@@ -26,8 +26,8 @@ export const Input: FC<InputProps> = ({textPlaceholder, textAlign, fluid, id, co
     };
 
     return (
-        <DivStyled fluid={fluid} componentSize={componentSize}>
-        <InputStyled aria-invalid={false} aria-labelledby={id} value={inputState} textAlign={textAlign} fluid={fluid} componentSize={componentSize} placeholder={textPlaceholder}  onKeyDown={handleKeyDown} onChange={handleChange}  />
+        <DivStyled mx={mx} fluid={fluid} maxWidth={maxWidth} componentSize={componentSize}>
+        <InputStyled aria-invalid={false} aria-labelledby={id} autoFocus={autoFocus} value={inputState} textAlign={textAlign} fluid={fluid} componentSize={componentSize} placeholder={textPlaceholder} onKeyDown={handleKeyDown} onChange={handleChange}  />
         {hasLabel && <LabelStyled id={id} textAlign={textAlign}>Type something</LabelStyled>}
         </DivStyled>
     );
